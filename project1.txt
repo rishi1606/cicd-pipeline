@@ -208,6 +208,45 @@ Here is how you would update the `test-react-app` job to generate a `.env` file 
 *   The `>>` operator in Linux takes the text on the left and appends it into the file on the right.
 *   This step literally writes a new file named `.env` on the Ubuntu server, containing your secrets and variables.
 *   When `npm run build` runs in the next step, it will find that `.env` file and correctly bake the variables into your React app!
+
+## Topic 11: Branch-Based Deployments
+If you have multiple teams working on a project, you do NOT want every push to go through Dev, Staging, and Production sequentially. 
+
+Instead, you tie specific deployment jobs to specific Git branches using `if` conditions!
+
+### The Setup
+1. **Trigger on multiple branches**: 
+   Change your `on: push:` to listen to all deployment branches: `branches: [ "master", "dev", "staging" ]`
+2. **Make all deployments depend on the build**:
+   Instead of Staging waiting for Dev, they should all just wait for `test-react-app` to finish.
+3. **Add `if:` conditions**:
+   Tell the job exactly which branch is allowed to run it.
+
+### Example configuration:
+```yaml
+  deploy-dev:
+    needs: test-react-app
+    if: github.ref == 'refs/heads/dev'
+    environment: Development
+    steps:
+      - run: echo "Deploying to DEV"
+
+  deploy-staging:
+    needs: test-react-app
+    if: github.ref == 'refs/heads/staging'
+    environment: Staging
+    steps:
+      - run: echo "Deploying to STAGING"
+
+  deploy-prod:
+    needs: test-react-app
+    if: github.ref == 'refs/heads/master'
+    environment: Production
+    steps:
+      - run: echo "Deploying to PROD"
+```
+
+With this setup, if a developer pushes code to the `dev` branch, the `deploy-dev` job runs, but GitHub completely **skips** Staging and Production. This gives teams total control over their deployments!
 ## Topic 8: Multi-Environment Deployment Pipeline
 In a real enterprise, you don't just deploy straight to Production. You "promote" your code through multiple environments to test it safely before users see it.
 
