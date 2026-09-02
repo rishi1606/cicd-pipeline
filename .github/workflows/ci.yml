@@ -22,11 +22,48 @@ jobs:
 
       - name: 4. Check if the App Builds Successfully
         run: npm run build
+
       - name: 5. Save the Build (Artifact)
         uses: actions/upload-artifact@v4
         with:
           name: react-production-build
           path: dist/
+
+  deploy-dev:
+    needs: test-react-app
+    environment: Development
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: react-production-build
+          path: dist/
+      - run: echo "🚀 Deploying to DEV Server..."
+
+  deploy-staging:
+    needs: deploy-dev
+    environment: Staging
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: react-production-build
+          path: dist/
+      - run: echo "🧪 Deploying to STAGING Server..."
+
+  deploy-prod:
+    needs: deploy-staging
+    environment: Production
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: react-production-build
+          path: dist/
+      - run: |
+          echo "🌐 Deploying to PRODUCTION Server..."
+          echo "Using Prod Secret: ${{ secrets.MY_API_KEY }}"
+
 
 
  

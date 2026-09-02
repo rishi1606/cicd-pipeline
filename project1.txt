@@ -101,3 +101,103 @@ Here is what we add as **Step 5** in our workflow:
 *   `uses: actions/upload-artifact@v4`: Calls the official GitHub tool to compress and save files.
 *   `with: name: react-production-build`: The custom name of the zip file that will be created and shown on your GitHub Actions dashboard.
 *   `with: path: dist/`: Tells GitHub exactly which folder to save. Since `npm run build` creates a folder named `dist/`, that is the specific folder we want to preserve before the server is destroyed.
+
+## Topic 6: Environments & Secrets
+Real-world applications are deployed to different **Environments** like `Development`, `Staging` (for QA testing), and `Production` (live for users). 
+
+To deploy, you need passwords, API keys, or server IP addresses. You should **never** hardcode these in your code! Instead, you store them securely in GitHub as **Secrets**.
+*   **Secrets**: Encrypted variables configured in your GitHub Repository (Settings -> Secrets and variables -> Actions). GitHub automatically masks them in the logs (they show up as `***`).
+*   **Environments**: You can create environments in GitHub (Settings -> Environments). You can attach specific secrets to them and even require **Manual Approvals** (e.g., a manager must click "Approve" before the `Production` job is allowed to run).
+
+## Topic 7: Continuous Deployment (CD)
+Now we add a second **Job** to our workflow. This job represents the **CD (Deploy)** part of `Build -> Test -> Package -> Deploy`.
+
+### Adding the Deployment Job
+We will create a job named `deploy-react-app`. It will wait for the build job to finish, download the artifact we saved, and simulate a deployment using a secret.
+
+Add this as a brand new job at the bottom of your `ci.yml` file (make sure the indentation matches `test-react-app:`):
+
+```yaml
+  deploy-react-app:
+    # 1. Wait for the build job to finish successfully
+    needs: test-react-app
+    # 2. Specify which Environment this is deploying to
+    environment: Production
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. Download the Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: react-production-build
+          path: dist/
+
+      - name: 2. Simulate Deployment
+        run: |
+          echo "Deploying to Production Server..."
+          echo "Using Secret API Key: ${{ secrets.MY_API_KEY }}"
+          echo "Deployment Successful!"
+```
+
+### Detailed Breakdown:
+*   `needs: test-react-app`: Crucial for CD! It tells GitHub: "Do not start deploying until the build/test job finishes and passes."
+*   `environment: Production`: Ties this job to the "Production" environment in GitHub.
+*   `uses: actions/download-artifact@v4`: Grabs the `dist/` folder we zipped in the previous job so we can upload it to our server.
+*   `${{ secrets.MY_API_KEY }}`: This is how GitHub Actions injects a secret into the server. If you don't create this secret in your repository settings, it will just be blank. If you do, it prints as `***` to stay safe!
+
+## Topic 8: Multi-Environment Deployment Pipeline
+In a real enterprise, you don't just deploy straight to Production. You "promote" your code through multiple environments to test it safely before users see it.
+
+The typical flow looks like this:
+1. **Development (Dev)**: Deploys automatically when you push. Used by developers to see quick changes.
+2. **Staging (QA)**: Deploys after Dev succeeds. Matches the Production setup exactly. Used by QA testers to look for bugs.
+3. **Production (Prod)**: The live app for users. Usually requires a **Manual Approval** before deploying.
+
+### The Pipeline Workflow
+We will replace our single deployment job with three separate jobs that run in order using the `needs` keyword.
+
+```yaml
+  deploy-dev:
+    needs: test-react-app
+    environment: Development
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: react-production-build
+          path: dist/
+      - run: echo "🚀 Deploying to DEV Server..."
+
+  deploy-staging:
+    needs: deploy-dev
+    environment: Staging
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: react-production-build
+          path: dist/
+      - run: echo "🧪 Deploying to STAGING Server..."
+
+  deploy-prod:
+    needs: deploy-staging
+    environment: Production
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: react-production-build
+          path: dist/
+      - run: |
+          echo "🌐 Deploying to PRODUCTION Server..."
+          echo "Using Prod Secret: ${{ secrets.MY_API_KEY }}"
+```
+
+### How to add Manual Approvals in GitHub
+If you run this code now, it will deploy to all three environments instantly. To make it behave like a real company pipeline, we add an Approval Gate:
+1. Go to your GitHub Repository **Settings** -> **Environments**.
+2. Click **New environment** and name it exactly `Production`.
+3. Check the box for **"Required reviewers"** and search for your own GitHub username to add yourself.
+4. Click **Save protection rules**.
+
+Now, when the pipeline reaches the `deploy-prod` job, it will **pause completely**. It will send you a notification and wait for you to click a green "Approve and Deploy" button on the GitHub page before it continues!
