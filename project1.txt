@@ -28,3 +28,53 @@ GitHub Actions is the CI/CD system built directly into GitHub. It reads `.yml` f
 *   **Jobs**: A group of tasks. By default, multiple jobs run at the exact same time (in parallel).
 *   **Runners**: The actual virtual machine (usually an Ubuntu Linux server) that GitHub spins up to run your code.
 *   **Steps**: The individual, sequential commands executed inside a Job (e.g., Step 1: checkout code, Step 2: run npm install).
+
+### Example Workflow File (`.github/workflows/ci.yml`)
+Below is the exact workflow we built for Project 1. It triggers on a push to `master`, spins up an Ubuntu server, downloads the code, installs Node.js, installs dependencies, and tests the React build.
+
+```yaml
+name: React CI Pipeline
+
+on:
+  push:
+    branches: [ "master" ]
+
+jobs:
+  test-react-app:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. Download Code from GitHub
+        uses: actions/checkout@v4
+
+      - name: 2. Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 3. Install React Dependencies
+        run: npm install
+
+      - name: 4. Check if the App Builds Successfully
+        run: npm run build
+```
+
+### Detailed Breakdown: What Every Line Does
+
+**The Trigger:**
+*   `name: React CI Pipeline` : Gives your workflow a human-readable title that shows up on the GitHub Actions dashboard.
+*   `on: push:` : Tells GitHub to "listen" for push events.
+*   `branches: [ "master" ]` : Tells GitHub to *only* run this workflow when code is pushed specifically to the `master` branch.
+
+**The Environment:**
+*   `jobs:` : Starts the list of jobs. A workflow can have multiple jobs that run in parallel.
+*   `test-react-app:` : The custom ID/name you are giving this specific job.
+*   `runs-on: ubuntu-latest` : Instructs GitHub to rent a brand new, completely empty Ubuntu Linux virtual machine in the cloud just to run this job.
+
+**The Steps (Executed in order on the Ubuntu machine):**
+*   `steps:` : Starts the chronological list of tasks to execute.
+*   `uses: actions/checkout@v4` : This is a "pre-built Action" made by GitHub. Because the Ubuntu server starts totally empty, this step downloads all of your repository's code onto that server so it can be tested.
+*   `uses: actions/setup-node@v4` : Another pre-built Action. It installs Node.js onto the Ubuntu server.
+*   `with: node-version: '20'` : Provides configuration to the step above, telling it exactly which version of Node to install.
+*   `run: npm install` : Opens the terminal on the Ubuntu server and runs `npm install` to download your React app's dependencies (creating the `node_modules` folder).
+*   `run: npm run build` : Runs the build script to ensure your React app compiles correctly without crashing. If this command fails, the entire GitHub Action fails (turns red)!
