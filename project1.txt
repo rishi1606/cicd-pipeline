@@ -78,3 +78,26 @@ jobs:
 *   `with: node-version: '20'` : Provides configuration to the step above, telling it exactly which version of Node to install.
 *   `run: npm install` : Opens the terminal on the Ubuntu server and runs `npm install` to download your React app's dependencies (creating the `node_modules` folder).
 *   `run: npm run build` : Runs the build script to ensure your React app compiles correctly without crashing. If this command fails, the entire GitHub Action fails (turns red)!
+
+## Topic 5: Artifacts (Packaging the Build)
+When GitHub Actions finishes running a job, it destroys the temporary Ubuntu server it was using. Anything you built (like the `dist/` folder containing your production-ready React app) is permanently deleted! 
+
+An **Artifact** is a way to save files from your workflow so you can download them later from the GitHub website or pass them to another job (like a Deployment job). This covers the **"Package"** part of `Build -> Test -> Package -> Deploy`.
+
+### Adding Artifacts to our Workflow
+To save the `dist/` folder after our React app finishes building, we use another pre-built GitHub action called `actions/upload-artifact`. 
+
+Here is what we add as **Step 5** in our workflow:
+
+```yaml
+      - name: 5. Save the Build (Artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: react-production-build
+          path: dist/
+```
+
+### Detailed Breakdown:
+*   `uses: actions/upload-artifact@v4`: Calls the official GitHub tool to compress and save files.
+*   `with: name: react-production-build`: The custom name of the zip file that will be created and shown on your GitHub Actions dashboard.
+*   `with: path: dist/`: Tells GitHub exactly which folder to save. Since `npm run build` creates a folder named `dist/`, that is the specific folder we want to preserve before the server is destroyed.
