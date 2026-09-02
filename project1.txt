@@ -145,6 +145,69 @@ Add this as a brand new job at the bottom of your `ci.yml` file (make sure the i
 *   `uses: actions/download-artifact@v4`: Grabs the `dist/` folder we zipped in the previous job so we can upload it to our server.
 *   `${{ secrets.MY_API_KEY }}`: This is how GitHub Actions injects a secret into the server. If you don't create this secret in your repository settings, it will just be blank. If you do, it prints as `***` to stay safe!
 
+## Topic 9: Environment Variables (ENV)
+In your roadmap, the topic was "Secrets & environment variables". We covered Secrets (which are hidden), but what about standard Environment Variables? 
+
+Unlike Secrets, **Environment Variables (ENV)** are plain-text values used to configure how your app behaves. Examples include setting `NODE_ENV=production` or `API_URL=https://myapi.com`. They don't need to be hidden; they just need to change depending on which environment is running.
+
+You define them in your `.yml` file using the `env:` block.
+
+### Example: Adding ENV variables to jobs
+If you want the `deploy-dev` job to use a Development API, and the `deploy-prod` job to use a Production API, you configure it like this:
+
+```yaml
+  deploy-dev:
+    needs: test-react-app
+    environment: Development
+    runs-on: ubuntu-latest
+    # Define environment variables for this job
+    env:
+      NODE_ENV: development
+      API_URL: https://dev-api.mycompany.com
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: react-production-build
+          path: dist/
+      - run: |
+          echo "🚀 Deploying to DEV Server..."
+          echo "Setting mode to: $NODE_ENV"
+          echo "Connecting to: $API_URL"
+```
+
+### Detailed Breakdown:
+*   `env:` : This block allows you to define custom variables for the job.
+*   `NODE_ENV: development` : A standard Node.js variable telling the app it is running in dev mode.
+*   `$NODE_ENV` and `$API_URL` : This is how you access the variables inside your bash `run:` scripts!
+
+## Topic 10: Generating a `.env` file for the UI
+Often, your React (or Vue/Angular) UI needs environment variables baked into the code during the `npm run build` step. In Vite, these variables must start with `VITE_`.
+
+Since we **never** commit our `.env` file to Git (because it contains secrets), how does the GitHub Actions Ubuntu server get the `.env` file it needs to build the app?
+
+**Answer:** We dynamically generate the `.env` file on the server right before we build!
+
+### Example:
+Here is how you would update the `test-react-app` job to generate a `.env` file on the fly using standard `env:` variables and GitHub Secrets:
+
+```yaml
+      - name: 3. Install React Dependencies
+        run: npm install
+
+      - name: Create .env file for the Build
+        run: |
+          echo "VITE_NODE_ENV=${{ env.NODE_ENV }}" >> .env
+          echo "VITE_API_URL=${{ env.API_URL }}" >> .env
+          echo "VITE_SECRET_KEY=${{ secrets.MY_API_KEY }}" >> .env
+
+      - name: 4. Check if the App Builds Successfully
+        run: npm run build
+```
+
+**How it works:**
+*   The `>>` operator in Linux takes the text on the left and appends it into the file on the right.
+*   This step literally writes a new file named `.env` on the Ubuntu server, containing your secrets and variables.
+*   When `npm run build` runs in the next step, it will find that `.env` file and correctly bake the variables into your React app!
 ## Topic 8: Multi-Environment Deployment Pipeline
 In a real enterprise, you don't just deploy straight to Production. You "promote" your code through multiple environments to test it safely before users see it.
 
