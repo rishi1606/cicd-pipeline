@@ -21,7 +21,7 @@ jobs:
           node-version: '20'
 
       - name: 3. Install React Dependencies
-        run: npm install
+        run: npm install --include=dev
 
       - name: Create .env file for the Build
         run: |
