@@ -1,0 +1,30 @@
+# Project 1: GitHub Actions - Test a Simple React App
+
+Here is your study guide for Project 1. It covers the fundamental tools and commands you will use.
+
+## Topic 1: Git Basics
+Git is a version control system that runs locally on your machine. It tracks the history of changes to your code.
+*   `git init` : Initializes a brand new, empty Git repository in your current folder. (We already did this!)
+*   `git status` : Shows the current state of your files (which files are modified, which are ready to be committed).
+*   `git add .` : Moves all your changed files to the "Staging Area" (getting them ready to be saved).
+*   `git commit -m "Your message"` : Permanently saves the staged changes to your local repository history.
+
+## Topic 2: Branching
+Branches allow you to work on an experimental feature without breaking the `main` stable code.
+*   `git branch <branch-name>` : Creates a new branch.
+*   `git switch <branch-name>` : Switches your working directory to that branch.
+*   `git checkout -b <branch-name>` : A shortcut that creates a new branch AND switches to it immediately.
+
+## Topic 3: GitHub & Remote Repositories
+GitHub is a website that hosts your Git repositories in the cloud so you can collaborate and run CI/CD.
+*   `git remote add origin <github-url>` : Connects your local folder to a specific repository on GitHub.
+*   `git push -u origin <branch-name>` : Uploads your local commits to the GitHub servers.
+*   **Pull Request (PR)** : A feature on GitHub where you ask to merge your feature branch into the `main` branch. It allows your team to review the code before it is merged.
+
+## Topic 4: GitHub Actions Basics
+GitHub Actions is the CI/CD system built directly into GitHub. It reads `.yml` files in your repository and runs scripts on cloud servers.
+*   **Workflow**: The entire automated process. It is defined by a `.yml` file placed inside the `.github/workflows/` folder.
+*   **Events**: What triggers the workflow to start. Example: `on: push` (starts when someone pushes code).
+*   **Jobs**: A group of tasks. By default, multiple jobs run at the exact same time (in parallel).
+*   **Runners**: The actual virtual machine (usually an Ubuntu Linux server) that GitHub spins up to run your code.
+*   **Steps**: The individual, sequential commands executed inside a Job (e.g., Step 1: checkout code, Step 2: run npm install).
